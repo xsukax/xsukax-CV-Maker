@@ -1,0 +1,926 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>xsukax CV Maker</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f6f8fa; }
+        .container { max-width: 1600px; margin: 0 auto; padding: 20px; }
+        .section { background: white; border: 1px solid #d0d7de; border-radius: 6px; padding: 20px; margin-bottom: 20px; }
+        .section-title { font-size: 18px; font-weight: 600; margin-bottom: 16px; color: #1f2328; border-bottom: 1px solid #d0d7de; padding-bottom: 8px; }
+        .input-group { margin-bottom: 16px; }
+        .input-label { display: block; font-size: 14px; font-weight: 500; margin-bottom: 6px; color: #1f2328; }
+        .input-field { width: 100%; padding: 8px 12px; border: 1px solid #d0d7de; border-radius: 6px; font-size: 14px; transition: border-color 0.2s; }
+        .input-field:focus { outline: none; border-color: #0969da; box-shadow: 0 0 0 3px rgba(9, 105, 218, 0.1); }
+        textarea.input-field { resize: vertical; min-height: 80px; font-family: inherit; }
+        .btn { padding: 8px 16px; border-radius: 6px; font-size: 14px; font-weight: 500; cursor: pointer; transition: all 0.2s; border: 1px solid transparent; display: inline-flex; align-items: center; gap: 6px; }
+        .btn-primary { background: #2da44e; color: white; border-color: rgba(27, 31, 36, 0.15); }
+        .btn-primary:hover { background: #2c974b; }
+        .btn-secondary { background: #f6f8fa; color: #24292f; border-color: #d0d7de; }
+        .btn-secondary:hover { background: #f3f4f6; border-color: #afb8c1; }
+        .btn-danger { background: #cf222e; color: white; }
+        .btn-danger:hover { background: #a40e26; }
+        .btn-small { padding: 4px 12px; font-size: 12px; }
+        .color-picker-container { display: flex; gap: 12px; flex-wrap: wrap; align-items: center; }
+        .color-option { width: 40px; height: 40px; border-radius: 6px; cursor: pointer; border: 3px solid transparent; transition: all 0.2s; }
+        .color-option:hover { transform: scale(1.1); }
+        .color-option.active { border-color: #1f2328; box-shadow: 0 0 0 2px white, 0 0 0 4px #1f2328; }
+        .custom-color-input { width: 60px; height: 40px; border: 2px solid #d0d7de; border-radius: 6px; cursor: pointer; }
+        .preview-container { background: #e8eaed; padding: 20px; border-radius: 6px; }
+        .cv-page { background: white; width: 210mm; height: 297mm; margin: 0 auto 20px; padding: 20mm; box-shadow: 0 2px 8px rgba(0,0,0,0.1); overflow: hidden; position: relative; }
+        .cv-header { padding-bottom: 16px; margin-bottom: 16px; }
+        .cv-header-border { height: 3px; margin-bottom: 16px; }
+        .cv-name { font-size: 32px; font-weight: 700; margin-bottom: 8px; color: #1a1a1a; }
+        .cv-title { font-size: 18px; color: #57606a; margin-bottom: 12px; }
+        .cv-contact { display: flex; flex-wrap: wrap; gap: 16px; font-size: 14px; color: #57606a; }
+        .cv-photo { width: 100px; height: 100px; border-radius: 50%; object-fit: cover; float: right; margin-left: 20px; border: 3px solid #d0d7de; }
+        .cv-summary { line-height: 1.6; margin-bottom: 16px; font-size: 14px; color: #1a1a1a; }
+        .cv-section { margin-top: 20px; page-break-inside: avoid; }
+        .cv-section-title { font-weight: 700; font-size: 18px; padding-bottom: 6px; margin-bottom: 12px; border-bottom: 2px solid; }
+        .cv-entry { margin-bottom: 14px; page-break-inside: avoid; }
+        .cv-entry-title { font-weight: 600; font-size: 15px; color: #1a1a1a; }
+        .cv-entry-subtitle { color: #57606a; font-size: 14px; margin-bottom: 4px; }
+        .cv-entry-date { color: #57606a; font-size: 13px; font-style: italic; }
+        .cv-entry-description { line-height: 1.5; margin-top: 6px; font-size: 14px; color: #1a1a1a; }
+        .cv-skills-list { line-height: 1.8; font-size: 14px; color: #1a1a1a; }
+        .page-number { position: absolute; bottom: 15mm; left: 0; right: 0; text-align: center; font-size: 12px; color: #57606a; }
+        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; align-items: center; justify-content: center; }
+        .modal.active { display: flex; }
+        .modal-content { background: white; border-radius: 6px; padding: 24px; max-width: 500px; width: 90%; box-shadow: 0 8px 24px rgba(0,0,0,0.2); }
+        .modal-title { font-size: 18px; font-weight: 600; margin-bottom: 16px; color: #1f2328; }
+        .modal-buttons { display: flex; gap: 8px; justify-content: flex-end; margin-top: 20px; }
+        .notification { position: fixed; top: 20px; right: 20px; background: white; border: 1px solid #d0d7de; border-radius: 6px; padding: 16px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); z-index: 2000; max-width: 350px; animation: slideIn 0.3s ease; }
+        .notification.success { border-left: 4px solid #2da44e; }
+        .notification.error { border-left: 4px solid #cf222e; }
+        .notification.info { border-left: 4px solid #0969da; }
+        @keyframes slideIn { from { transform: translateX(400px); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+        .repeater-item { border: 1px solid #d0d7de; border-radius: 6px; padding: 16px; margin-bottom: 12px; background: #f6f8fa; }
+        .repeater-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+        .two-column { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+        @media (max-width: 1400px) { .cv-page { transform: scale(0.8); transform-origin: top center; } }
+        @media (max-width: 1000px) { .cv-page { transform: scale(0.6); transform-origin: top center; } .two-column { grid-template-columns: 1fr; } }
+        @media print { .cv-page { box-shadow: none; margin: 0; page-break-after: always; } }
+        .header-bar { background: white; border-bottom: 1px solid #d0d7de; padding: 16px 0; margin-bottom: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
+        .header-content { max-width: 1600px; margin: 0 auto; padding: 0 20px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; }
+        .brand { font-size: 20px; font-weight: 600; color: #1f2328; }
+        .brand-icon { color: #2da44e; }
+        .action-buttons { display: flex; gap: 8px; flex-wrap: wrap; }
+        .form-scroll { max-height: calc(100vh - 100px); overflow-y: auto; }
+    </style>
+</head>
+<body>
+    <div class="header-bar">
+        <div class="header-content">
+            <div class="brand"><span class="brand-icon">●</span> xsukax CV Maker</div>
+            <div class="action-buttons">
+                <button class="btn btn-secondary" onclick="importData()">Import</button>
+                <button class="btn btn-secondary" onclick="exportData()">Export</button>
+                <button class="btn btn-secondary" onclick="showShareModal()">Share</button>
+                <button class="btn btn-primary" onclick="generatePDF()">Download PDF</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="container">
+        <div style="display: grid; grid-template-columns: 480px 1fr; gap: 20px;">
+            <div class="form-scroll">
+                <div class="section">
+                    <div class="section-title">Color Theme</div>
+                    <div class="color-picker-container">
+                        <div class="color-option active" style="background: #0969da;" onclick="selectColor('#0969da')" data-color="#0969da"></div>
+                        <div class="color-option" style="background: #14b8a6;" onclick="selectColor('#14b8a6')" data-color="#14b8a6"></div>
+                        <div class="color-option" style="background: #1e40af;" onclick="selectColor('#1e40af')" data-color="#1e40af"></div>
+                        <div class="color-option" style="background: #7c3aed;" onclick="selectColor('#7c3aed')" data-color="#7c3aed"></div>
+                        <div class="color-option" style="background: #dc2626;" onclick="selectColor('#dc2626')" data-color="#dc2626"></div>
+                        <div class="color-option" style="background: #2da44e;" onclick="selectColor('#2da44e')" data-color="#2da44e"></div>
+                        <div class="color-option" style="background: #ea580c;" onclick="selectColor('#ea580c')" data-color="#ea580c"></div>
+                        <div class="color-option" style="background: #000000;" onclick="selectColor('#000000')" data-color="#000000"></div>
+                        <input type="color" id="customColor" class="custom-color-input" onchange="selectColor(this.value)" title="Custom Color">
+                    </div>
+                    <div style="margin-top: 16px;">
+                        <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+                            <input type="checkbox" id="numberPages" onchange="updatePreview()" checked style="width: 16px; height: 16px; cursor: pointer;">
+                            <span class="input-label" style="margin: 0;">Number Pages (from page 2)</span>
+                        </label>
+                    </div>
+                </div>
+
+                <div class="section">
+                    <div class="section-title">Personal Information</div>
+                    <div class="input-group">
+                        <label class="input-label">Full Name *</label>
+                        <input type="text" id="fullName" class="input-field" placeholder="John Doe" oninput="updatePreview()">
+                    </div>
+                    <div class="input-group">
+                        <label class="input-label">Professional Title</label>
+                        <input type="text" id="title" class="input-field" placeholder="Software Engineer" oninput="updatePreview()">
+                    </div>
+                    <div class="two-column">
+                        <div class="input-group">
+                            <label class="input-label">Email</label>
+                            <input type="email" id="email" class="input-field" placeholder="john@example.com" oninput="updatePreview()">
+                        </div>
+                        <div class="input-group">
+                            <label class="input-label">Phone</label>
+                            <input type="tel" id="phone" class="input-field" placeholder="+1 234 567 8900" oninput="updatePreview()">
+                        </div>
+                    </div>
+                    <div class="input-group">
+                        <label class="input-label">Address</label>
+                        <input type="text" id="address" class="input-field" placeholder="City, Country" oninput="updatePreview()">
+                    </div>
+                    <div class="input-group">
+                        <label class="input-label">Photo (Optional)</label>
+                        <input type="file" id="photo" class="input-field" accept="image/*" onchange="handlePhotoUpload(event)">
+                    </div>
+                </div>
+
+                <div class="section">
+                    <div class="section-title">Professional Summary</div>
+                    <div class="input-group">
+                        <textarea id="summary" class="input-field" placeholder="Brief professional summary..." oninput="updatePreview()"></textarea>
+                    </div>
+                </div>
+
+                <div class="section">
+                    <div class="section-title">Work Experience</div>
+                    <div id="experienceContainer"></div>
+                    <button class="btn btn-secondary btn-small" onclick="addExperience()">+ Add Experience</button>
+                </div>
+
+                <div class="section">
+                    <div class="section-title">Education</div>
+                    <div id="educationContainer"></div>
+                    <button class="btn btn-secondary btn-small" onclick="addEducation()">+ Add Education</button>
+                </div>
+
+                <div class="section">
+                    <div class="section-title">Skills</div>
+                    <div class="input-group">
+                        <label class="input-label">Skills (comma-separated, will display with bullets)</label>
+                        <textarea id="skills" class="input-field" placeholder="JavaScript, Python, React..." oninput="updatePreview()"></textarea>
+                    </div>
+                </div>
+
+                <div class="section">
+                    <div class="section-title">Languages</div>
+                    <div class="input-group">
+                        <label class="input-label">Languages</label>
+                        <input type="text" id="languages" class="input-field" placeholder="English (Native), Spanish (Fluent)" oninput="updatePreview()">
+                    </div>
+                </div>
+
+                <div class="section">
+                    <div class="section-title">Certifications</div>
+                    <div id="certificationsContainer"></div>
+                    <button class="btn btn-secondary btn-small" onclick="addCertification()">+ Add Certification</button>
+                </div>
+
+                <div class="section">
+                    <div class="section-title">Projects</div>
+                    <div id="projectsContainer"></div>
+                    <button class="btn btn-secondary btn-small" onclick="addProject()">+ Add Project</button>
+                </div>
+
+                <div class="section">
+                    <div class="section-title">Awards</div>
+                    <div id="awardsContainer"></div>
+                    <button class="btn btn-secondary btn-small" onclick="addAward()">+ Add Award</button>
+                </div>
+
+                <div class="section">
+                    <div class="section-title">References</div>
+                    <div class="input-group">
+                        <textarea id="references" class="input-field" placeholder="Available upon request..." oninput="updatePreview()"></textarea>
+                    </div>
+                </div>
+            </div>
+
+            <div>
+                <div class="section-title" style="margin-bottom: 16px;">Live Preview</div>
+                <div class="preview-container">
+                    <div id="cvPreview"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="shareModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-title">Share CV</div>
+            <div class="input-group">
+                <label class="input-label">Share Method</label>
+                <select id="shareMethod" class="input-field">
+                    <option value="base64">Base64 URL (Anyone with link)</option>
+                    <option value="encrypted">Encrypted URL (Password protected)</option>
+                </select>
+            </div>
+            <div id="passwordGroup" class="input-group" style="display: none;">
+                <label class="input-label">Password</label>
+                <input type="password" id="sharePassword" class="input-field" placeholder="Enter password">
+            </div>
+            <div id="shareUrlGroup" class="input-group" style="display: none;">
+                <label class="input-label">Shareable URL</label>
+                <textarea id="shareUrl" class="input-field" readonly style="min-height: 60px;"></textarea>
+            </div>
+            <div class="modal-buttons">
+                <button class="btn btn-secondary" onclick="closeModal('shareModal')">Cancel</button>
+                <button class="btn btn-primary" onclick="generateShareUrl()">Generate URL</button>
+                <button class="btn btn-secondary" onclick="copyShareUrl()" id="copyBtn" style="display: none;">Copy URL</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="passwordModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-title">Enter Password</div>
+            <div class="input-group">
+                <label class="input-label">Password</label>
+                <input type="password" id="decryptPassword" class="input-field" placeholder="Enter password">
+            </div>
+            <div class="modal-buttons">
+                <button class="btn btn-primary" onclick="decryptAndLoad()">Unlock</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let cvData = {
+            color: '#0969da',
+            numberPages: true,
+            personalInfo: {},
+            experiences: [],
+            education: [],
+            certifications: [],
+            projects: [],
+            awards: [],
+            photoData: null
+        };
+
+        let counters = { experience: 0, education: 0, certification: 0, project: 0, award: 0 };
+
+        function showNotification(message, type = 'info') {
+            const notification = document.createElement('div');
+            notification.className = `notification ${type}`;
+            notification.innerHTML = `<div style="font-weight: 600; margin-bottom: 4px;">${type === 'success' ? '✓' : type === 'error' ? '✗' : 'ℹ'} ${type.toUpperCase()}</div><div style="font-size: 14px;">${message}</div>`;
+            document.body.appendChild(notification);
+            setTimeout(() => notification.remove(), 4000);
+        }
+
+        function selectColor(color) {
+            cvData.color = color;
+            document.querySelectorAll('.color-option').forEach(el => el.classList.remove('active'));
+            const selectedOption = document.querySelector(`[data-color="${color}"]`);
+            if (selectedOption) selectedOption.classList.add('active');
+            updatePreview();
+        }
+
+        function handlePhotoUpload(event) {
+            const file = event.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    const img = new Image();
+                    img.onload = () => {
+                        const canvas = document.createElement('canvas');
+                        const ctx = canvas.getContext('2d');
+                        
+                        let width = img.width;
+                        let height = img.height;
+                        const targetMinSize = 250;
+                        
+                        const minDimension = Math.min(width, height);
+                        
+                        if (minDimension > targetMinSize) {
+                            const scale = targetMinSize / minDimension;
+                            width = Math.round(width * scale);
+                            height = Math.round(height * scale);
+                        }
+                        
+                        canvas.width = width;
+                        canvas.height = height;
+                        ctx.drawImage(img, 0, 0, width, height);
+                        
+                        cvData.photoData = canvas.toDataURL('image/jpeg', 0.9);
+                        updatePreview();
+                    };
+                    img.src = e.target.result;
+                };
+                reader.readAsDataURL(file);
+            }
+        }
+
+        function addExperience() {
+            const id = counters.experience++;
+            const html = `
+                <div class="repeater-item" id="exp-${id}">
+                    <div class="repeater-header">
+                        <strong>Experience #${id + 1}</strong>
+                        <button class="btn btn-danger btn-small" onclick="removeItem('exp-${id}')">Remove</button>
+                    </div>
+                    <div class="input-group">
+                        <label class="input-label">Job Title</label>
+                        <input type="text" class="input-field" data-type="experience" data-id="${id}" data-field="title" oninput="updatePreview()">
+                    </div>
+                    <div class="input-group">
+                        <label class="input-label">Company</label>
+                        <input type="text" class="input-field" data-type="experience" data-id="${id}" data-field="company" oninput="updatePreview()">
+                    </div>
+                    <div class="two-column">
+                        <div class="input-group">
+                            <label class="input-label">Start Date</label>
+                            <input type="text" class="input-field" data-type="experience" data-id="${id}" data-field="startDate" placeholder="Jan 2020" oninput="updatePreview()">
+                        </div>
+                        <div class="input-group">
+                            <label class="input-label">End Date</label>
+                            <input type="text" class="input-field" data-type="experience" data-id="${id}" data-field="endDate" placeholder="Present" oninput="updatePreview()">
+                        </div>
+                    </div>
+                    <div class="input-group">
+                        <label class="input-label">Description</label>
+                        <textarea class="input-field" data-type="experience" data-id="${id}" data-field="description" oninput="updatePreview()"></textarea>
+                    </div>
+                </div>
+            `;
+            document.getElementById('experienceContainer').insertAdjacentHTML('beforeend', html);
+            cvData.experiences.push({ id, title: '', company: '', startDate: '', endDate: '', description: '' });
+        }
+
+        function addEducation() {
+            const id = counters.education++;
+            const html = `
+                <div class="repeater-item" id="edu-${id}">
+                    <div class="repeater-header">
+                        <strong>Education #${id + 1}</strong>
+                        <button class="btn btn-danger btn-small" onclick="removeItem('edu-${id}')">Remove</button>
+                    </div>
+                    <div class="input-group">
+                        <label class="input-label">Degree</label>
+                        <input type="text" class="input-field" data-type="education" data-id="${id}" data-field="degree" oninput="updatePreview()">
+                    </div>
+                    <div class="input-group">
+                        <label class="input-label">Institution</label>
+                        <input type="text" class="input-field" data-type="education" data-id="${id}" data-field="institution" oninput="updatePreview()">
+                    </div>
+                    <div class="two-column">
+                        <div class="input-group">
+                            <label class="input-label">Year</label>
+                            <input type="text" class="input-field" data-type="education" data-id="${id}" data-field="year" placeholder="2020" oninput="updatePreview()">
+                        </div>
+                        <div class="input-group">
+                            <label class="input-label">Grade/GPA</label>
+                            <input type="text" class="input-field" data-type="education" data-id="${id}" data-field="grade" oninput="updatePreview()">
+                        </div>
+                    </div>
+                </div>
+            `;
+            document.getElementById('educationContainer').insertAdjacentHTML('beforeend', html);
+            cvData.education.push({ id, degree: '', institution: '', year: '', grade: '' });
+        }
+
+        function addCertification() {
+            const id = counters.certification++;
+            const html = `
+                <div class="repeater-item" id="cert-${id}">
+                    <div class="repeater-header">
+                        <strong>Certification #${id + 1}</strong>
+                        <button class="btn btn-danger btn-small" onclick="removeItem('cert-${id}')">Remove</button>
+                    </div>
+                    <div class="input-group">
+                        <label class="input-label">Certification Name</label>
+                        <input type="text" class="input-field" data-type="certification" data-id="${id}" data-field="name" oninput="updatePreview()">
+                    </div>
+                    <div class="input-group">
+                        <label class="input-label">Issuing Organization</label>
+                        <input type="text" class="input-field" data-type="certification" data-id="${id}" data-field="issuer" oninput="updatePreview()">
+                    </div>
+                    <div class="input-group">
+                        <label class="input-label">Date</label>
+                        <input type="text" class="input-field" data-type="certification" data-id="${id}" data-field="date" oninput="updatePreview()">
+                    </div>
+                </div>
+            `;
+            document.getElementById('certificationsContainer').insertAdjacentHTML('beforeend', html);
+            cvData.certifications.push({ id, name: '', issuer: '', date: '' });
+        }
+
+        function addProject() {
+            const id = counters.project++;
+            const html = `
+                <div class="repeater-item" id="proj-${id}">
+                    <div class="repeater-header">
+                        <strong>Project #${id + 1}</strong>
+                        <button class="btn btn-danger btn-small" onclick="removeItem('proj-${id}')">Remove</button>
+                    </div>
+                    <div class="input-group">
+                        <label class="input-label">Project Name</label>
+                        <input type="text" class="input-field" data-type="project" data-id="${id}" data-field="name" oninput="updatePreview()">
+                    </div>
+                    <div class="input-group">
+                        <label class="input-label">Description</label>
+                        <textarea class="input-field" data-type="project" data-id="${id}" data-field="description" oninput="updatePreview()"></textarea>
+                    </div>
+                    <div class="input-group">
+                        <label class="input-label">Technologies</label>
+                        <input type="text" class="input-field" data-type="project" data-id="${id}" data-field="technologies" oninput="updatePreview()">
+                    </div>
+                </div>
+            `;
+            document.getElementById('projectsContainer').insertAdjacentHTML('beforeend', html);
+            cvData.projects.push({ id, name: '', description: '', technologies: '' });
+        }
+
+        function addAward() {
+            const id = counters.award++;
+            const html = `
+                <div class="repeater-item" id="award-${id}">
+                    <div class="repeater-header">
+                        <strong>Award #${id + 1}</strong>
+                        <button class="btn btn-danger btn-small" onclick="removeItem('award-${id}')">Remove</button>
+                    </div>
+                    <div class="input-group">
+                        <label class="input-label">Award Title</label>
+                        <input type="text" class="input-field" data-type="award" data-id="${id}" data-field="title" oninput="updatePreview()">
+                    </div>
+                    <div class="input-group">
+                        <label class="input-label">Issuer</label>
+                        <input type="text" class="input-field" data-type="award" data-id="${id}" data-field="issuer" oninput="updatePreview()">
+                    </div>
+                    <div class="input-group">
+                        <label class="input-label">Date</label>
+                        <input type="text" class="input-field" data-type="award" data-id="${id}" data-field="date" oninput="updatePreview()">
+                    </div>
+                </div>
+            `;
+            document.getElementById('awardsContainer').insertAdjacentHTML('beforeend', html);
+            cvData.awards.push({ id, title: '', issuer: '', date: '' });
+        }
+
+        function removeItem(id) {
+            document.getElementById(id).remove();
+            updatePreview();
+        }
+
+        function updatePreview() {
+            cvData.personalInfo = {
+                fullName: document.getElementById('fullName').value,
+                title: document.getElementById('title').value,
+                email: document.getElementById('email').value,
+                phone: document.getElementById('phone').value,
+                address: document.getElementById('address').value
+            };
+
+            cvData.summary = document.getElementById('summary').value;
+            cvData.skills = document.getElementById('skills').value;
+            cvData.languages = document.getElementById('languages').value;
+            cvData.references = document.getElementById('references').value;
+            cvData.numberPages = document.getElementById('numberPages').checked;
+
+            const typeMap = {
+                'experience': 'experiences',
+                'education': 'education',
+                'certification': 'certifications',
+                'project': 'projects',
+                'award': 'awards'
+            };
+
+            Object.keys(typeMap).forEach(type => {
+                document.querySelectorAll(`[data-type="${type}"]`).forEach(input => {
+                    const id = parseInt(input.dataset.id);
+                    const field = input.dataset.field;
+                    const item = cvData[typeMap[type]].find(e => e.id === id);
+                    if (item) item[field] = input.value;
+                });
+            });
+
+            renderPreview();
+        }
+
+        function renderPreview() {
+            const sections = [];
+            
+            if (cvData.personalInfo.fullName) {
+                let header = '<div class="cv-header">';
+                if (cvData.photoData) {
+                    header += `<img src="${cvData.photoData}" class="cv-photo" alt="Photo">`;
+                }
+                header += `<div class="cv-name">${cvData.personalInfo.fullName}</div>`;
+                if (cvData.personalInfo.title) {
+                    header += `<div class="cv-title">${cvData.personalInfo.title}</div>`;
+                }
+                const contact = [cvData.personalInfo.email, cvData.personalInfo.phone, cvData.personalInfo.address].filter(Boolean);
+                if (contact.length > 0) {
+                    header += `<div class="cv-contact">${contact.map(c => `<span>${c}</span>`).join('')}</div>`;
+                }
+                header += '</div>';
+                header += `<div class="cv-header-border" style="background: ${cvData.color};"></div>`;
+                sections.push({ type: 'header', content: header });
+            }
+
+            if (cvData.summary) {
+                sections.push({ type: 'content', content: `<div class="cv-summary">${cvData.summary}</div>` });
+            }
+
+            const validExperiences = cvData.experiences.filter(e => e.title || e.company);
+            if (validExperiences.length > 0) {
+                let html = `<div class="cv-section"><div class="cv-section-title" style="color: ${cvData.color}; border-color: ${cvData.color};">Work Experience</div>`;
+                validExperiences.forEach(exp => {
+                    html += '<div class="cv-entry">';
+                    if (exp.title) html += `<div class="cv-entry-title">${exp.title}</div>`;
+                    if (exp.company) html += `<div class="cv-entry-subtitle">${exp.company}</div>`;
+                    if (exp.startDate || exp.endDate) {
+                        html += `<div class="cv-entry-date">${exp.startDate}${exp.endDate ? ' - ' + exp.endDate : ''}</div>`;
+                    }
+                    if (exp.description) html += `<div class="cv-entry-description">${exp.description}</div>`;
+                    html += '</div>';
+                });
+                html += '</div>';
+                sections.push({ type: 'section', content: html });
+            }
+
+            const validEducation = cvData.education.filter(e => e.degree || e.institution);
+            if (validEducation.length > 0) {
+                let html = `<div class="cv-section"><div class="cv-section-title" style="color: ${cvData.color}; border-color: ${cvData.color};">Education</div>`;
+                validEducation.forEach(edu => {
+                    html += '<div class="cv-entry">';
+                    if (edu.degree) html += `<div class="cv-entry-title">${edu.degree}</div>`;
+                    if (edu.institution) html += `<div class="cv-entry-subtitle">${edu.institution}</div>`;
+                    const eduDetails = [edu.year, edu.grade].filter(Boolean);
+                    if (eduDetails.length > 0) html += `<div class="cv-entry-date">${eduDetails.join(' • ')}</div>`;
+                    html += '</div>';
+                });
+                html += '</div>';
+                sections.push({ type: 'section', content: html });
+            }
+
+            if (cvData.skills) {
+                const skillsList = cvData.skills.split(',').map(s => s.trim()).filter(s => s);
+                if (skillsList.length > 0) {
+                    let html = `<div class="cv-section"><div class="cv-section-title" style="color: ${cvData.color}; border-color: ${cvData.color};">Skills</div>`;
+                    html += `<div class="cv-skills-list">${skillsList.join(' • ')}</div>`;
+                    html += '</div>';
+                    sections.push({ type: 'section', content: html });
+                }
+            }
+
+            if (cvData.languages) {
+                let html = `<div class="cv-section"><div class="cv-section-title" style="color: ${cvData.color}; border-color: ${cvData.color};">Languages</div>`;
+                html += `<div class="cv-entry-description">${cvData.languages}</div></div>`;
+                sections.push({ type: 'section', content: html });
+            }
+
+            const validCertifications = cvData.certifications.filter(c => c.name || c.issuer);
+            if (validCertifications.length > 0) {
+                let html = `<div class="cv-section"><div class="cv-section-title" style="color: ${cvData.color}; border-color: ${cvData.color};">Certifications</div>`;
+                validCertifications.forEach(cert => {
+                    html += '<div class="cv-entry">';
+                    if (cert.name) html += `<div class="cv-entry-title">${cert.name}</div>`;
+                    if (cert.issuer) html += `<div class="cv-entry-subtitle">${cert.issuer}</div>`;
+                    if (cert.date) html += `<div class="cv-entry-date">${cert.date}</div>`;
+                    html += '</div>';
+                });
+                html += '</div>';
+                sections.push({ type: 'section', content: html });
+            }
+
+            const validProjects = cvData.projects.filter(p => p.name);
+            if (validProjects.length > 0) {
+                let html = `<div class="cv-section"><div class="cv-section-title" style="color: ${cvData.color}; border-color: ${cvData.color};">Projects</div>`;
+                validProjects.forEach(proj => {
+                    html += '<div class="cv-entry">';
+                    if (proj.name) html += `<div class="cv-entry-title">${proj.name}</div>`;
+                    if (proj.technologies) html += `<div class="cv-entry-subtitle">${proj.technologies}</div>`;
+                    if (proj.description) html += `<div class="cv-entry-description">${proj.description}</div>`;
+                    html += '</div>';
+                });
+                html += '</div>';
+                sections.push({ type: 'section', content: html });
+            }
+
+            const validAwards = cvData.awards.filter(a => a.title || a.issuer);
+            if (validAwards.length > 0) {
+                let html = `<div class="cv-section"><div class="cv-section-title" style="color: ${cvData.color}; border-color: ${cvData.color};">Awards & Achievements</div>`;
+                validAwards.forEach(award => {
+                    html += '<div class="cv-entry">';
+                    if (award.title) html += `<div class="cv-entry-title">${award.title}</div>`;
+                    if (award.issuer) html += `<div class="cv-entry-subtitle">${award.issuer}</div>`;
+                    if (award.date) html += `<div class="cv-entry-date">${award.date}</div>`;
+                    html += '</div>';
+                });
+                html += '</div>';
+                sections.push({ type: 'section', content: html });
+            }
+
+            if (cvData.references) {
+                let html = `<div class="cv-section"><div class="cv-section-title" style="color: ${cvData.color}; border-color: ${cvData.color};">References</div>`;
+                html += `<div class="cv-entry-description">${cvData.references}</div></div>`;
+                sections.push({ type: 'section', content: html });
+            }
+
+            layoutPages(sections);
+        }
+
+        function layoutPages(sections) {
+            const preview = document.getElementById('cvPreview');
+            preview.innerHTML = '';
+            
+            let currentPage = createPage();
+            let currentHeight = 0;
+            const maxHeight = 1050;
+            const sectionMargin = 20;
+            let pageNumber = 1;
+
+            sections.forEach((section, index) => {
+                const tempDiv = document.createElement('div');
+                tempDiv.innerHTML = section.content;
+                tempDiv.style.position = 'absolute';
+                tempDiv.style.visibility = 'hidden';
+                document.body.appendChild(tempDiv);
+                const sectionHeight = tempDiv.offsetHeight;
+                document.body.removeChild(tempDiv);
+
+                if (section.type === 'header') {
+                    currentPage.innerHTML += section.content;
+                    currentHeight += sectionHeight;
+                } else if (section.type === 'section' && index > 0) {
+                    if (currentHeight + sectionHeight + sectionMargin > maxHeight) {
+                        if (cvData.numberPages && pageNumber > 1) {
+                            currentPage.innerHTML += `<div class="page-number">-${pageNumber}-</div>`;
+                        }
+                        preview.appendChild(currentPage);
+                        currentPage = createPage();
+                        currentHeight = 0;
+                        pageNumber++;
+                    }
+                    currentPage.innerHTML += section.content;
+                    currentHeight += sectionHeight + sectionMargin;
+                } else {
+                    if (currentHeight + sectionHeight > maxHeight) {
+                        if (cvData.numberPages && pageNumber > 1) {
+                            currentPage.innerHTML += `<div class="page-number">-${pageNumber}-</div>`;
+                        }
+                        preview.appendChild(currentPage);
+                        currentPage = createPage();
+                        currentHeight = 0;
+                        pageNumber++;
+                    }
+                    currentPage.innerHTML += section.content;
+                    currentHeight += sectionHeight;
+                }
+            });
+
+            if (currentPage.innerHTML) {
+                if (cvData.numberPages && pageNumber > 1) {
+                    currentPage.innerHTML += `<div class="page-number">-${pageNumber}-</div>`;
+                }
+                preview.appendChild(currentPage);
+            }
+        }
+
+        function createPage() {
+            const page = document.createElement('div');
+            page.className = 'cv-page';
+            return page;
+        }
+
+        async function generatePDF() {
+            showNotification('Generating PDF...', 'info');
+            
+            const pages = document.querySelectorAll('.cv-page');
+            const { jsPDF } = window.jspdf;
+            const pdf = new jsPDF('p', 'mm', 'a4');
+
+            for (let i = 0; i < pages.length; i++) {
+                const canvas = await html2canvas(pages[i], { scale: 2, useCORS: true });
+                const imgData = canvas.toDataURL('image/jpeg', 0.98);
+                
+                if (i > 0) pdf.addPage();
+                pdf.addImage(imgData, 'JPEG', 0, 0, 210, 297);
+            }
+
+            pdf.save(`${cvData.personalInfo.fullName || 'CV'}_CV.pdf`);
+            showNotification('PDF downloaded successfully!', 'success');
+        }
+
+        function exportData() {
+            const cleanData = {
+                color: cvData.color,
+                numberPages: cvData.numberPages,
+                personalInfo: cvData.personalInfo,
+                summary: cvData.summary,
+                skills: cvData.skills,
+                languages: cvData.languages,
+                references: cvData.references,
+                photoData: cvData.photoData,
+                experiences: cvData.experiences.filter(e => e.title || e.company || e.startDate || e.endDate || e.description),
+                education: cvData.education.filter(e => e.degree || e.institution || e.year || e.grade),
+                certifications: cvData.certifications.filter(c => c.name || c.issuer || c.date),
+                projects: cvData.projects.filter(p => p.name || p.description || p.technologies),
+                awards: cvData.awards.filter(a => a.title || a.issuer || a.date)
+            };
+            
+            const dataStr = JSON.stringify(cleanData, null, 2);
+            const dataBlob = new Blob([dataStr], { type: 'application/json' });
+            const url = URL.createObjectURL(dataBlob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = `${cvData.personalInfo.fullName || 'CV'}_data.json`;
+            link.click();
+            showNotification('CV data exported!', 'success');
+        }
+
+        function importData() {
+            const input = document.createElement('input');
+            input.type = 'file';
+            input.accept = '.json';
+            input.onchange = (e) => {
+                const file = e.target.files[0];
+                const reader = new FileReader();
+                reader.onload = (event) => {
+                    try {
+                        const imported = JSON.parse(event.target.result);
+                        loadCVData(imported);
+                        showNotification('CV data imported!', 'success');
+                    } catch (error) {
+                        showNotification('Error importing data', 'error');
+                    }
+                };
+                reader.readAsText(file);
+            };
+            input.click();
+        }
+
+        function loadCVData(data) {
+            document.getElementById('fullName').value = data.personalInfo?.fullName || '';
+            document.getElementById('title').value = data.personalInfo?.title || '';
+            document.getElementById('email').value = data.personalInfo?.email || '';
+            document.getElementById('phone').value = data.personalInfo?.phone || '';
+            document.getElementById('address').value = data.personalInfo?.address || '';
+            document.getElementById('summary').value = data.summary || '';
+            document.getElementById('skills').value = data.skills || '';
+            document.getElementById('languages').value = data.languages || '';
+            document.getElementById('references').value = data.references || '';
+            document.getElementById('numberPages').checked = data.numberPages !== undefined ? data.numberPages : true;
+            
+            cvData.color = data.color || '#0969da';
+            cvData.numberPages = data.numberPages !== undefined ? data.numberPages : true;
+            cvData.personalInfo = data.personalInfo || {};
+            cvData.summary = data.summary || '';
+            cvData.skills = data.skills || '';
+            cvData.languages = data.languages || '';
+            cvData.references = data.references || '';
+            cvData.photoData = data.photoData || null;
+            
+            document.getElementById('experienceContainer').innerHTML = '';
+            document.getElementById('educationContainer').innerHTML = '';
+            document.getElementById('certificationsContainer').innerHTML = '';
+            document.getElementById('projectsContainer').innerHTML = '';
+            document.getElementById('awardsContainer').innerHTML = '';
+            
+            counters = { experience: 0, education: 0, certification: 0, project: 0, award: 0 };
+            
+            cvData.experiences = [];
+            cvData.education = [];
+            cvData.certifications = [];
+            cvData.projects = [];
+            cvData.awards = [];
+            
+            (data.experiences || []).forEach(() => addExperience());
+            (data.education || []).forEach(() => addEducation());
+            (data.certifications || []).forEach(() => addCertification());
+            (data.projects || []).forEach(() => addProject());
+            (data.awards || []).forEach(() => addAward());
+            
+            setTimeout(() => {
+                const typeMap = {
+                    'experience': 'experiences',
+                    'education': 'education',
+                    'certification': 'certifications',
+                    'project': 'projects',
+                    'award': 'awards'
+                };
+                
+                Object.keys(typeMap).forEach(type => {
+                    const items = data[typeMap[type]] || [];
+                    items.forEach((item, idx) => {
+                        Object.keys(item).forEach(key => {
+                            if (key !== 'id') {
+                                const input = document.querySelector(`[data-type="${type}"][data-id="${idx}"][data-field="${key}"]`);
+                                if (input) input.value = item[key] || '';
+                            }
+                        });
+                    });
+                });
+                
+                selectColor(cvData.color);
+                updatePreview();
+            }, 100);
+        }
+
+        function showShareModal() {
+            document.getElementById('shareModal').classList.add('active');
+            document.getElementById('shareMethod').addEventListener('change', function() {
+                document.getElementById('passwordGroup').style.display = this.value === 'encrypted' ? 'block' : 'none';
+            });
+        }
+
+        function closeModal(modalId) {
+            document.getElementById(modalId).classList.remove('active');
+        }
+
+        function generateShareUrl() {
+            const method = document.getElementById('shareMethod').value;
+            
+            const cleanData = {
+                color: cvData.color,
+                numberPages: cvData.numberPages,
+                personalInfo: cvData.personalInfo,
+                summary: cvData.summary,
+                skills: cvData.skills,
+                languages: cvData.languages,
+                references: cvData.references,
+                photoData: cvData.photoData,
+                experiences: cvData.experiences.filter(e => e.title || e.company || e.startDate || e.endDate || e.description),
+                education: cvData.education.filter(e => e.degree || e.institution || e.year || e.grade),
+                certifications: cvData.certifications.filter(c => c.name || c.issuer || c.date),
+                projects: cvData.projects.filter(p => p.name || p.description || p.technologies),
+                awards: cvData.awards.filter(a => a.title || a.issuer || a.date)
+            };
+            
+            const data = JSON.stringify(cleanData);
+            
+            if (method === 'base64') {
+                const encoded = btoa(encodeURIComponent(data));
+                const url = `${window.location.origin}${window.location.pathname}?cv=${encoded}`;
+                document.getElementById('shareUrl').value = url;
+                document.getElementById('shareUrlGroup').style.display = 'block';
+                document.getElementById('copyBtn').style.display = 'inline-flex';
+                showNotification('Share URL generated!', 'success');
+            } else {
+                const password = document.getElementById('sharePassword').value;
+                if (!password) {
+                    showNotification('Please enter a password', 'error');
+                    return;
+                }
+                
+                const encrypted = CryptoJS.AES.encrypt(data, password).toString();
+                const encoded = btoa(encrypted);
+                const url = `${window.location.origin}${window.location.pathname}?cv_enc=${encoded}`;
+                document.getElementById('shareUrl').value = url;
+                document.getElementById('shareUrlGroup').style.display = 'block';
+                document.getElementById('copyBtn').style.display = 'inline-flex';
+                showNotification('Encrypted URL generated!', 'success');
+            }
+        }
+
+        function copyShareUrl() {
+            const url = document.getElementById('shareUrl');
+            url.select();
+            document.execCommand('copy');
+            showNotification('URL copied!', 'success');
+        }
+
+        function decryptAndLoad() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const encrypted = urlParams.get('cv_enc');
+            const password = document.getElementById('decryptPassword').value;
+            
+            try {
+                const decrypted = CryptoJS.AES.decrypt(atob(encrypted), password).toString(CryptoJS.enc.Utf8);
+                const data = JSON.parse(decrypted);
+                loadCVData(data);
+                closeModal('passwordModal');
+                showNotification('CV loaded!', 'success');
+            } catch (error) {
+                showNotification('Incorrect password', 'error');
+            }
+        }
+
+        window.addEventListener('DOMContentLoaded', () => {
+            const urlParams = new URLSearchParams(window.location.search);
+            
+            if (urlParams.has('cv')) {
+                try {
+                    const encoded = urlParams.get('cv');
+                    const decoded = decodeURIComponent(atob(encoded));
+                    const data = JSON.parse(decoded);
+                    loadCVData(data);
+                    showNotification('CV loaded from URL!', 'success');
+                } catch (error) {
+                    showNotification('Error loading CV', 'error');
+                }
+            } else if (urlParams.has('cv_enc')) {
+                document.getElementById('passwordModal').classList.add('active');
+            }
+            
+            updatePreview();
+        });
+    </script>
+</body>
+</html>
