@@ -845,7 +845,6 @@
                 skills: cvData.skills,
                 languages: cvData.languages,
                 references: cvData.references,
-                photoData: cvData.photoData,
                 experiences: cvData.experiences.filter(e => e.title || e.company || e.startDate || e.endDate || e.description),
                 education: cvData.education.filter(e => e.degree || e.institution || e.year || e.grade),
                 certifications: cvData.certifications.filter(c => c.name || c.issuer || c.date),
@@ -861,7 +860,7 @@
                 document.getElementById('shareUrl').value = url;
                 document.getElementById('shareUrlGroup').style.display = 'block';
                 document.getElementById('copyBtn').style.display = 'inline-flex';
-                showNotification('Share URL generated!', 'success');
+                showNotification('Share URL generated! (Photo excluded)', 'success');
             } else {
                 const password = document.getElementById('sharePassword').value;
                 if (!password) {
@@ -875,7 +874,7 @@
                 document.getElementById('shareUrl').value = url;
                 document.getElementById('shareUrlGroup').style.display = 'block';
                 document.getElementById('copyBtn').style.display = 'inline-flex';
-                showNotification('Encrypted URL generated!', 'success');
+                showNotification('Encrypted URL generated! (Photo excluded)', 'success');
             }
         }
 
